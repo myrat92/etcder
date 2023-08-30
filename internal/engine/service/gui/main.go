@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/exp/slog"
+	"strings"
 
 	"github.com/myrat92/etcder/internal/engine/domain/etcd"
 	"github.com/myrat92/etcder/internal/engine/infrastructure/session"
@@ -144,7 +145,7 @@ func NewLoginPage(connectButtonOnTapped func(title string)) fyne.CanvasObject {
 }
 
 func NewDataPage() fyne.CanvasObject {
-	d, err := etcd.Instance().ListAll()
+	listAll, err := etcd.Instance().ListAll()
 
 	if err != nil {
 		slog.Warn("list key in etcd", err)
@@ -157,23 +158,44 @@ func NewDataPage() fyne.CanvasObject {
 
 	list := widget.NewList(
 		func() int {
-			return len(d)
+			return len(listAll)
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Template Object")
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
-			item.(*widget.Label).SetText(d[id])
+			item.(*widget.Label).SetText(listAll[id])
 		},
 	)
 
 	var key string
 	list.OnSelected = func(id widget.ListItemID) {
-		err = value.Set(etcd.Instance().Get(d[id]))
+		err = value.Set(etcd.Instance().Get(listAll[id]))
 		if err != nil {
 			slog.Warn("get value", err)
 		}
-		key = d[id]
+		key = listAll[id]
+	}
+
+	searchEntry := widget.NewEntry()
+	searchEntry.SetPlaceHolder("Search")
+
+	searchEntry.OnChanged = func(query string) {
+		listAll, err = etcd.Instance().ListAll()
+
+		if err != nil {
+			slog.Warn("list key in etcd", err)
+		}
+
+		var newList []string
+		for _, d := range listAll {
+			if strings.Contains(d, query) {
+				newList = append(newList, d)
+			}
+		}
+
+		listAll = newList
+		list.Refresh()
 	}
 
 	// toolbar
@@ -181,7 +203,7 @@ func NewDataPage() fyne.CanvasObject {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.ViewRefreshIcon(), func() {
-			d, err = etcd.Instance().ListAll()
+			listAll, err = etcd.Instance().ListAll()
 			if err != nil {
 				slog.Warn("refresh list", err)
 			}
@@ -204,7 +226,9 @@ func NewDataPage() fyne.CanvasObject {
 
 	topBox := container.New(layout.NewHBoxLayout(), dropdown, toolbar)
 
-	split := container.NewHSplit(list, container.NewBorder(topBox, nil, nil, nil, valueEntry))
+	listBorder := container.NewBorder(searchEntry, nil, nil, nil, list)
+
+	split := container.NewHSplit(listBorder, container.NewBorder(topBox, nil, nil, nil, valueEntry))
 	content := container.NewBorder(nil, nil, nil, nil, split)
 
 	return content
