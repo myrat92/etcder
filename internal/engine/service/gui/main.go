@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"fmt"
+	"encoding/json"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
@@ -145,15 +145,15 @@ func NewLoginPage(connectButtonOnTapped func(title string)) fyne.CanvasObject {
 
 func NewDataPage() fyne.CanvasObject {
 	d, err := etcd.Instance().ListAll()
-	fmt.Println(d)
+
 	if err != nil {
 		slog.Warn("list key in etcd", err)
 	}
 
 	value := binding.NewString()
-	valueEntry := widget.NewEntryWithData(value)
-	valueEntry.MultiLine = true
-	valueEntry.Disabled()
+	valueEntry := widget.NewMultiLineEntry()
+	valueEntry.Wrapping = fyne.TextWrapWord
+	valueEntry.Bind(value)
 
 	list := widget.NewList(
 		func() int {
@@ -186,6 +186,11 @@ func NewDataPage() fyne.CanvasObject {
 				slog.Warn("refresh list", err)
 			}
 			list.Refresh()
+
+			err = value.Set(etcd.Instance().Get(key))
+			if err != nil {
+				slog.Warn("get value", err)
+			}
 		}),
 		widget.NewToolbarAction(theme.DocumentSaveIcon(), func() {
 			err = etcd.Instance().Update(key, valueEntry.Text)
@@ -195,8 +200,50 @@ func NewDataPage() fyne.CanvasObject {
 		}),
 	)
 
-	split := container.NewHSplit(list, valueEntry)
-	content := container.NewBorder(toolbar, nil, nil, nil, split)
+	dropdown := makeFormatSelect(valueEntry)
+
+	topBox := container.New(layout.NewHBoxLayout(), dropdown, toolbar)
+
+	split := container.NewHSplit(list, container.NewBorder(topBox, nil, nil, nil, valueEntry))
+	content := container.NewBorder(nil, nil, nil, nil, split)
 
 	return content
+}
+
+func makeFormatSelect(valueEntry *widget.Entry) *widget.Select {
+	options := []string{"json", "txt"}
+	dropdown := widget.NewSelect(options, func(selected string) {
+		switch selected {
+		case "json":
+			var jsonData map[string]interface{}
+			err := json.Unmarshal([]byte(valueEntry.Text), &jsonData)
+			if err != nil {
+				slog.Warn("json unmarshal", err)
+				return
+			}
+
+			formattedJson, err := json.MarshalIndent(jsonData, "", "    ")
+			if err != nil {
+				slog.Warn("json marshal", err)
+				return
+			}
+			valueEntry.SetText(string(formattedJson))
+		case "txt":
+			var jsonData map[string]interface{}
+			err := json.Unmarshal([]byte(valueEntry.Text), &jsonData)
+			if err != nil {
+				slog.Warn("json unmarshal", err)
+				return
+			}
+
+			formattedStr, err := json.Marshal(jsonData)
+			if err != nil {
+				slog.Warn("json marshal", err)
+				return
+			}
+			valueEntry.SetText(string(formattedStr))
+		}
+	})
+
+	return dropdown
 }
