@@ -2,7 +2,6 @@ package gui
 
 import (
 	"fmt"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
@@ -13,6 +12,10 @@ import (
 
 	"github.com/myrat92/etcder/internal/engine/domain/etcd"
 	"github.com/myrat92/etcder/internal/engine/infrastructure/session"
+)
+
+var (
+	Unselected = -1
 )
 
 func Start(app fyne.App) {
@@ -45,7 +48,7 @@ func NewLoginPage(connectButtonOnTapped func(title string)) fyne.CanvasObject {
 	hostBind := binding.NewString()
 	portBind := binding.NewString()
 	idbind := binding.NewInt()
-	idbind.Set(-1)
+	idbind.Set(Unselected)
 
 	sessions := session.ListSession()
 
@@ -68,10 +71,6 @@ func NewLoginPage(connectButtonOnTapped func(title string)) fyne.CanvasObject {
 		idbind.Set(id)
 	}
 
-	list.OnUnselected = func(id widget.ListItemID) {
-		idbind.Set(-1)
-	}
-
 	name := widget.NewEntryWithData(nameBind)
 	host := widget.NewEntryWithData(hostBind)
 	port := widget.NewEntryWithData(portBind)
@@ -88,7 +87,11 @@ func NewLoginPage(connectButtonOnTapped func(title string)) fyne.CanvasObject {
 
 	saveButton := widget.NewButton("Save", func() {
 		id, _ := idbind.Get()
-		session.UpdateSession(name.Text, host.Text, port.Text, id)
+		if id == Unselected {
+			session.AddSession(name.Text, host.Text, port.Text)
+		} else {
+			session.UpdateSession(name.Text, host.Text, port.Text, id)
+		}
 
 		sessions = session.ListSession()
 		list.Refresh()
