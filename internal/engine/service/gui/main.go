@@ -18,8 +18,8 @@ import (
 func Start(app fyne.App) {
 	tabs := container.NewDocTabs()
 
-	connectButtonOnTapped := func() {
-		t := container.NewTabItem("New Tab", NewDataPage())
+	connectButtonOnTapped := func(title string) {
+		t := container.NewTabItem(title, NewDataPage())
 		tabs.Items = append(tabs.Items, t)
 		tabs.Select(t)
 		tabs.Refresh()
@@ -40,7 +40,7 @@ func Start(app fyne.App) {
 	w.Show()
 }
 
-func NewLoginPage(connectButtonOnTapped func()) fyne.CanvasObject {
+func NewLoginPage(connectButtonOnTapped func(title string)) fyne.CanvasObject {
 	nameBind := binding.NewString()
 	hostBind := binding.NewString()
 	portBind := binding.NewString()
@@ -106,7 +106,7 @@ func NewLoginPage(connectButtonOnTapped func()) fyne.CanvasObject {
 		}
 		tipsLabel.SetText("")
 
-		connectButtonOnTapped()
+		connectButtonOnTapped(name.Text)
 	}
 
 	listToolBar := widget.NewToolbar(
