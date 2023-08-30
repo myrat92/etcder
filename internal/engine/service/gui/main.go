@@ -2,6 +2,8 @@ package gui
 
 import (
 	"encoding/json"
+	"strings"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
@@ -9,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/exp/slog"
-	"strings"
 
 	"github.com/myrat92/etcder/internal/engine/domain/etcd"
 	"github.com/myrat92/etcder/internal/engine/infrastructure/session"
