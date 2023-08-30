@@ -2,6 +2,7 @@ package etcd
 
 import (
 	"context"
+
 	"golang.org/x/exp/slog"
 
 	"github.com/myrat92/etcder/internal/engine/infrastructure/etcdv3"

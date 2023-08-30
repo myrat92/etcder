@@ -84,6 +84,8 @@ func NewLoginPage(connectButtonOnTapped func()) fyne.CanvasObject {
 		},
 	}
 
+	tipsLabel := widget.NewLabel("")
+
 	saveButton := widget.NewButton("Save", func() {
 		id, _ := idbind.Get()
 		session.UpdateSession(name.Text, host.Text, port.Text, id)
@@ -92,18 +94,20 @@ func NewLoginPage(connectButtonOnTapped func()) fyne.CanvasObject {
 		list.Refresh()
 	})
 
-	connectButton := widget.NewButton("Connect", func() {
-		etcd.NewInstance("127.0.0.1:2379")
+	connectButton := widget.NewButton("Connect", func() {})
+
+	connectButton.OnTapped = func() {
+		etcd.NewInstance(host.Text + ":" + port.Text)
 
 		err := etcd.Instance().Health()
 		if err != nil {
-			fmt.Println(err)
-			form.Enable()
+			tipsLabel.SetText(err.Error())
 			return
 		}
+		tipsLabel.SetText("")
 
 		connectButtonOnTapped()
-	})
+	}
 
 	listToolBar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentAddIcon(), func() {
@@ -124,7 +128,9 @@ func NewLoginPage(connectButtonOnTapped func()) fyne.CanvasObject {
 	)
 
 	buttonBox := container.NewVBox(form, container.NewCenter(container.NewHBox(saveButton, connectButton)))
-	connection := container.NewBorder(widget.NewLabel("New Connection"), nil, nil, nil, buttonBox)
+	box := container.NewVBox(buttonBox, tipsLabel)
+
+	connection := container.NewBorder(widget.NewLabel("New Connection"), nil, nil, nil, box)
 
 	right := container.New(layout.NewMaxLayout(), connection)
 	left := container.NewBorder(nil, listToolBar, nil, nil, list)
