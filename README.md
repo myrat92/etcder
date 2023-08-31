@@ -1,5 +1,10 @@
 # etcder
 
+<p align="center">
+    <img src="./docs/logos/etcder.png" width="200" alt="etcder logo">
+</p>
+
+English | [简体中文](./README-CN.md)
 
 etcder is a cross-platform visual interface that assists you in connecting your etcd cluster.
 
