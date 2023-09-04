@@ -44,18 +44,18 @@ func (e *Etcdv3) List(ctx context.Context, key string) ([]string, error) {
 	return res, nil
 }
 
-func (e *Etcdv3) Get(ctx context.Context, key string) (string, error) {
+func (e *Etcdv3) GetDetail(ctx context.Context, key string) (*clientv3.GetResponse, error) {
 	ctx, _ = context.WithTimeout(ctx, Timeout)
 	getResp, err := e.client.KV.Get(ctx, key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if len(getResp.Kvs) == 0 {
-		return "", NewKeyNotFoundError(key, 0)
+		return nil, NewKeyNotFoundError(key, 0)
 	}
 
-	return string(getResp.Kvs[0].Value), nil
+	return e.client.KV.Get(ctx, key)
 }
 
 func (e *Etcdv3) Health(ctx context.Context) error {

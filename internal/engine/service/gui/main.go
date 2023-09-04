@@ -157,6 +157,8 @@ func NewDataPage() fyne.CanvasObject {
 	valueEntry.Wrapping = fyne.TextWrapWord
 	valueEntry.Bind(value)
 
+	belowValueBoard := NewBelowValueBoard()
+
 	list := widget.NewList(
 		func() int {
 			return len(listAll)
@@ -171,10 +173,14 @@ func NewDataPage() fyne.CanvasObject {
 
 	var key string
 	list.OnSelected = func(id widget.ListItemID) {
-		err = value.Set(etcd.Instance().Get(listAll[id]))
+		d := etcd.Instance().GetDetail(listAll[id])
+		err = value.Set(d.Value)
 		if err != nil {
 			slog.Warn("get value", err)
 		}
+
+		belowValueBoard.Refresh(d)
+
 		key = listAll[id]
 	}
 
@@ -210,10 +216,12 @@ func NewDataPage() fyne.CanvasObject {
 			}
 			list.Refresh()
 
-			err = value.Set(etcd.Instance().Get(key))
+			d := etcd.Instance().GetDetail(key)
+			err = value.Set(d.Value)
 			if err != nil {
 				slog.Warn("get value", err)
 			}
+			belowValueBoard.Refresh(d)
 		}),
 		widget.NewToolbarAction(theme.DocumentSaveIcon(), func() {
 			err = etcd.Instance().Update(key, valueEntry.Text)
@@ -223,15 +231,19 @@ func NewDataPage() fyne.CanvasObject {
 		}),
 	)
 
+	belowValue := container.NewHBox(
+		belowValueBoard.Version, belowValueBoard.CreateRev, belowValueBoard.ModRev, belowValueBoard.Lease,
+	)
+
 	dropdown := makeFormatSelect(valueEntry)
 
 	topBox := container.New(layout.NewHBoxLayout(), dropdown, toolbar)
 
 	listBorder := container.NewBorder(searchEntry, nil, nil, nil, list)
 
-	split := container.NewHSplit(listBorder, container.NewBorder(topBox, nil, nil, nil, valueEntry))
-	content := container.NewBorder(nil, nil, nil, nil, split)
+	split := container.NewHSplit(listBorder, container.NewBorder(topBox, belowValue, nil, nil, valueEntry))
 
+	content := container.NewBorder(nil, nil, nil, nil, split)
 	return content
 }
 

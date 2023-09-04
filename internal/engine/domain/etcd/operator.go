@@ -16,6 +16,14 @@ type Operator interface {
 	Health() error
 }
 
+type GetResp struct {
+	Value     string
+	Version   int64
+	CreateRev int64
+	ModRev    int64
+	Lease     int64
+}
+
 var operate *Operate
 
 type Operate struct {
@@ -37,13 +45,19 @@ func (o *Operate) ListAll() ([]string, error) {
 	return o.cli.List(context.Background(), "/")
 }
 
-func (o *Operate) Get(key string) string {
-	res, err := o.cli.Get(context.Background(), key)
+func (o *Operate) GetDetail(key string) *GetResp {
+	res, err := o.cli.GetDetail(context.Background(), key)
 	if err != nil {
 		slog.Warn("get key", err)
-		return ""
+		return &GetResp{}
 	}
-	return res
+	return &GetResp{
+		Value:     string(res.Kvs[0].Value),
+		Version:   res.Kvs[0].Version,
+		CreateRev: res.Kvs[0].CreateRevision,
+		ModRev:    res.Kvs[0].ModRevision,
+		Lease:     res.Kvs[0].Lease,
+	}
 }
 
 func (o *Operate) Health() error {
